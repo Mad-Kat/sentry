@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 @cell_silo_endpoint
 class GroupNotesDetailsEndpoint(GroupEndpoint):
+    max_acceptable_duration = 3.0
+
     publish_status = {
         "DELETE": ApiPublishStatus.PRIVATE,
         "PUT": ApiPublishStatus.PRIVATE,

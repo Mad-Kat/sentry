@@ -267,6 +267,9 @@ class Endpoint(APIView):
     cursor_name = "cursor"
 
     owner: ApiOwner = ApiOwner.UNOWNED
+    # Request duration budgets are expressed in seconds. A mapping applies budgets only to the
+    # listed HTTP methods; missing methods are not budgeted.
+    max_acceptable_duration: dict[HTTP_METHOD_NAME, float] | float | None = None
     publish_status: dict[HTTP_METHOD_NAME, ApiPublishStatus] = {}
     rate_limits: RateLimitConfig | Callable[..., RateLimitConfig] = DEFAULT_RATE_LIMIT_CONFIG
     enforce_rate_limit: bool = settings.SENTRY_RATELIMITER_ENABLED
