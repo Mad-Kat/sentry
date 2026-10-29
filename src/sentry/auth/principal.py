@@ -7,6 +7,7 @@ from django.http.request import HttpRequest
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.request import Request
 
+from sentry import options
 from sentry.api.exceptions import UserRequired
 from sentry.auth.services.auth.model import AuthenticatedToken
 from sentry.types.superuser import to_viewer_context_superuser
@@ -52,7 +53,9 @@ class RequestPrincipal(Protocol):
 
 def resolve_actor(user: Any, auth: Any) -> Actor | None:
     """The actor behind an authenticated ``(user, auth)`` pair, or None if there is none."""
-    from sentry.seer.agent_token import is_agent_auth  # circular: imported at app setup
+    # circular: imported at app setup
+    from sentry.seer.agent_token import is_agent_auth
+    from sentry.service_accounts.auth import is_service_account_auth
 
     superuser = (
         to_viewer_context_superuser(auth.superuser)
@@ -61,6 +64,8 @@ def resolve_actor(user: Any, auth: Any) -> Actor | None:
     )
     if is_agent_auth(auth):
         return Actor(type=ActorType.AGENT, delegated_user_id=auth.user_id, superuser=superuser)
+    if is_service_account_auth(auth):
+        return Actor(type=ActorType.SERVICE_ACCOUNT, actor_id=auth.entity_id)
     user_id = getattr(user, "user_id", None)
     if user_id is not None:
         return Actor(type=ActorType.USER, actor_id=user_id, superuser=superuser)
@@ -87,6 +92,12 @@ def set_request_principal(request: HttpRequest | Request, user: Any, auth: Any) 
 
     The only place they're set, so what lands on ``request.user`` is decided here.
     """
+    from sentry.service_accounts.auth import is_service_account_auth
+
+    # Off, a service account is anonymous on request.user and known only by its credential.
+    # Checked on the credential: isinstance on Django's lazy user would load the session.
+    if is_service_account_auth(auth) and not options.get("auth.service-account-principal"):
+        user = AnonymousUser()
     request.user = user
     request.auth = auth
 

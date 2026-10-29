@@ -1,11 +1,17 @@
+from typing import Any
+
 from django.conf import settings
 from django.urls import reverse
 
+from sentry.api.decorators import is_considered_sudo
 from sentry.auth.services.auth import AuthenticatedToken
 from sentry.middleware.placeholder import placeholder_get_response
 from sentry.middleware.sudo import SudoMiddleware
 from sentry.seer import agent_token
+from sentry.service_accounts.auth import SERVICE_ACCOUNT_TOKEN_KIND
+from sentry.service_accounts.principal import ServiceAccountPrincipal
 from sentry.testutils.cases import APITestCase
+from sentry.testutils.helpers.options import override_options
 from sentry.testutils.silo import no_silo_test
 
 
@@ -23,6 +29,14 @@ class SudoTest(APITestCase):
             auth=AuthenticatedToken(kind=agent_token.AGENT_TOKEN_KIND),
         )
         assert not middleware.has_sudo_privileges(request)
+
+    @override_options({"auth.service-account-principal": True})
+    def test_service_account_is_not_sudo(self) -> None:
+        principal = ServiceAccountPrincipal(service_account_id=1, organization_id=1, name="sa")
+        auth = AuthenticatedToken(kind=SERVICE_ACCOUNT_TOKEN_KIND, entity_id=1, organization_id=1)
+        request: Any = self.make_request(user=principal, auth=auth)
+        request.is_sudo = lambda: False
+        assert not is_considered_sudo(request)
 
     def test_agent_token_never_satisfies_sudo(self) -> None:
         org = self.create_organization()
