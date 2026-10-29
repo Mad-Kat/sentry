@@ -637,8 +637,6 @@ SERVICE_ACCOUNT_KNOWN_GAPS: dict[str, ServiceAccountGap] = {
     "OrganizationStarredServiceSpans_delete": ServiceAccountGap.REQUIRES_USER,
     "ProjectDetails_put": ServiceAccountGap.REQUIRES_USER,
     "OrganizationStarredServiceSpans_post": ServiceAccountGap.USER_ACTOR_ERROR,
-    "ProjectDetails_delete": ServiceAccountGap.USER_ACTOR_ERROR,
-    "TeamDetails_delete": ServiceAccountGap.USER_ACTOR_ERROR,
     "EventAttachmentDetails": ServiceAccountGap.NO_ORG_ROLE,
     "OrganizationMemberIndex_post": ServiceAccountGap.NO_ORG_ROLE,
 }
