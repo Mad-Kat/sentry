@@ -216,11 +216,6 @@
       "count": 3
     }
   },
-  "components/core/drawer/useDrawerResizing.tsx": {
-    "@sentry/scraps/prefer-container-responsive-props": {
-      "count": 1
-    }
-  },
   "components/core/modal/components.tsx": {
     "@sentry/scraps/prefer-container-responsive-props": {
       "count": 2
