@@ -930,24 +930,18 @@ class SlackInvestigationEntrypoint(
             duration=10,
             name="investigation_entrypoint_slack",
         )
-        if cache_payload is None:
-            with lock.blocking_acquire(initial_delay=0.1, timeout=10):
-                SlackInvestigationEntrypoint._send_conclusion_to_alert_threads(
-                    run_id=run.id, clicked_payload=None
-                )
-            return
-
         with SlackEntrypointEventLifecycleMetric(
             interaction_type=SlackEntrypointInteractionType.UPDATE_INVESTIGATION_STATUS,
-            integration_id=cache_payload["integration_id"],
-            organization_id=cache_payload["organization_id"],
+            integration_id=cache_payload["integration_id"] if cache_payload else None,
+            organization_id=run.investigation.organization_id,
         ).capture() as lifecycle:
             lifecycle.add_extras({"investigation_id": investigation_id})
             try:
                 with lock.blocking_acquire(initial_delay=0.1, timeout=10):
-                    SlackInvestigationEntrypoint._update_investigation_status(
-                        run_id=run.id, lifecycle=lifecycle
-                    )
+                    if cache_payload is not None:
+                        SlackInvestigationEntrypoint._update_investigation_status(
+                            run_id=run.id, lifecycle=lifecycle
+                        )
                     SlackInvestigationEntrypoint._send_conclusion_to_alert_threads(
                         run_id=run.id, clicked_payload=cache_payload
                     )
@@ -1111,6 +1105,8 @@ class SlackInvestigationEntrypoint(
         installs: dict[int, SlackIntegration | None] = {}
         for thread in threads:
             integration_id = thread.integration_id
+            if integration_id is None:
+                continue
             with SlackEntrypointEventLifecycleMetric(
                 interaction_type=SlackEntrypointInteractionType.SEND_INVESTIGATION_CONCLUSION,
                 integration_id=integration_id,
@@ -1163,7 +1159,6 @@ def _get_alert_threads(open_period: GroupOpenPeriod) -> list[NotificationThread]
         and thread.key_type == NotificationSource.METRIC_ALERT
         and thread.date_added >= open_period.date_started
         and (open_period.date_ended is None or thread.date_added <= open_period.date_ended)
-        and thread.integration_id is not None
     ]
 
 
