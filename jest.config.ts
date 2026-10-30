@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {createRequire} from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -25,7 +26,16 @@ const swcConfig: SwcOptions = {
       },
     },
     experimental: {
-      plugins: [['@swc-contrib/mut-cjs-exports', {}]],
+      plugins: [
+        [
+          createRequire(import.meta.resolve('@yak/react')).resolve('@yak/swc'),
+          {
+            basePath: import.meta.dirname,
+            importMode: {value: 'data:text/css;base64,', encoding: 'Base64'},
+          },
+        ],
+        ['@swc-contrib/mut-cjs-exports', {}],
+      ],
     },
   },
 };
@@ -251,6 +261,7 @@ const ESM_NODE_MODULES = [
   'color',
   'marked',
   '@sentry\\+sqlish',
+  '@yak\\+react',
 ];
 
 const config: Config.InitialOptions = {
@@ -266,6 +277,7 @@ const config: Config.InitialOptions = {
   moduleNameMapper: {
     '\\.(css|less|png|gif|jpg|avif|webp|woff|mp4)$':
       '<rootDir>/tests/js/sentry-test/mocks/importStyleMock.js',
+    '^@yak/react/context$': '<rootDir>/static/packages/scraps/src/theme/yakContext.tsx',
     '^sentry/stories/storyManifest\\.generated$':
       '<rootDir>/tests/js/sentry-test/mocks/storyManifestMock.ts',
     '^sentry/(.*)': '<rootDir>/static/app/$1',
@@ -321,7 +333,7 @@ const config: Config.InitialOptions = {
     '<rootDir>/node_modules/reflux',
   ],
   transform: {
-    '^.+\\.[mc]?[jt]sx?$': ['@swc/jest', swcConfig],
+    '^.+\\.[mc]?[jt]sx?$': ['<rootDir>/tests/js/jestYakTransform.mjs', swcConfig],
     '^.+\\.pegjs?$': '<rootDir>/tests/js/jest-pegjs-transform.js',
   },
   transformIgnorePatterns: [

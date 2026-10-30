@@ -1,4 +1,4 @@
-import {Fragment, lazy, useRef} from 'react';
+import {Fragment, lazy, useLayoutEffect, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import createCache from '@emotion/cache';
 import {CacheProvider, ThemeProvider} from '@emotion/react';
@@ -41,6 +41,11 @@ export function ThemeAndStyleProvider({children}: Props) {
   const config = useLegacyStore(ConfigStore);
 
   const theme = config.theme === 'dark' ? darkTheme : lightTheme;
+
+  // yak components read the theme colors from global CSS variables.
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === darkTheme);
+  }, [theme]);
 
   const didPrintBanner = useRef(false);
   // oxlint-disable-next-line react/refs

@@ -5,7 +5,10 @@ import {noStyledShortcut} from './noStyledShortcut';
 const ruleTester = new RuleTester();
 
 ruleTester.run('no-styled-shortcut', noStyledShortcut, {
-  valid: [{code: "var Test = styled('div')``;"}],
+  valid: [
+    {code: "var Test = styled('div')``;"},
+    {code: "import {styled} from '@yak/react';\nvar Test = styled.div``;"},
+  ],
   invalid: [
     {
       code: 'var Test = styled.div``;',

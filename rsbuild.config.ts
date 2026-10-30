@@ -15,6 +15,7 @@ import type {
 import rspack from '@rspack/core';
 import {ReactRefreshRspackPlugin} from '@rspack/plugin-react-refresh';
 import {sentryWebpackPlugin} from '@sentry/webpack-plugin/webpack5';
+import {pluginYak} from '@yak/react/rsbuild';
 import CompressionPlugin from 'compression-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import {TsCheckerRspackPlugin} from 'ts-checker-rspack-plugin';
@@ -524,6 +525,15 @@ const appConfig: Configuration = {
         path.join(staticPrefix, 'packages', 'scraps', 'src'),
         path.join(staticPrefix, 'app', 'components', 'core'),
       ],
+      // yak components read the theme of the Emotion ThemeProvider.
+      '@yak/react/context$': path.join(
+        staticPrefix,
+        'packages',
+        'scraps',
+        'src',
+        'theme',
+        'yakContext.tsx'
+      ),
 
       getsentry: path.join(staticPrefix, 'gsApp'),
       'getsentry-images': path.join(staticPrefix, 'images'),
@@ -586,7 +596,11 @@ const appConfig: Configuration = {
 
     // This only runs in production mode
     minimizer: [
-      new rspack.LightningCssMinimizerRspackPlugin(),
+      // Flatten CSS nesting. yak keeps at-rules nested in a class, and with
+      // many such classes the browser takes longer to recalculate styles.
+      new rspack.LightningCssMinimizerRspackPlugin({
+        minimizerOptions: {include: {nesting: true}},
+      }),
       new rspack.SwcJsMinimizerRspackPlugin(),
     ],
   },
@@ -1050,15 +1064,17 @@ if (env.RSPACK_STATS) {
 const rsbuildConfig: RsbuildConfig = {
   root: import.meta.dirname,
   mode: WEBPACK_MODE,
-  plugins:
-    IS_UI_DEV_ONLY &&
+  plugins: [
+    pluginYak(),
+    ...(IS_UI_DEV_ONLY &&
     !fs.existsSync(path.join(import.meta.dirname, 'config', 'localhost.pem'))
       ? [
           pluginBasicSsl({
             outputPath: path.join(import.meta.dirname, 'node_modules/.cache/basic-ssl'),
           }),
         ]
-      : [],
+      : []),
+  ],
   dev: {
     assetPrefix:
       typeof appConfig.output?.publicPath === 'string'
@@ -1086,7 +1102,23 @@ const rsbuildConfig: RsbuildConfig = {
       output: {target: 'web', distPath: {root: distPath}, cleanDistPath: false},
       tools: {
         htmlPlugin: false,
-        rspack: config => ({...config, ...appConfig}),
+        rspack: config => ({
+          ...config,
+          ...appConfig,
+          module: {
+            ...appConfig.module,
+            // appConfig replaces the Rsbuild rules. Keep the two rules that
+            // pluginYak adds: the yak loader and the extracted CSS.
+            rules: [
+              ...(config.module?.rules ?? []).filter(
+                rule =>
+                  typeof rule === 'object' &&
+                  (rule?.enforce === 'pre' || rule?.mimetype === 'text/css')
+              ),
+              ...(appConfig.module?.rules ?? []),
+            ],
+          },
+        }),
       },
     },
     'service-worker': {

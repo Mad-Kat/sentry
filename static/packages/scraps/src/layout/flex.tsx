@@ -1,34 +1,17 @@
-import styled from '@emotion/styled';
+import type * as React from 'react';
 
 import type {CSS} from '@sentry/scraps/cssTypes';
 import type {SpaceSize} from '@sentry/scraps/theme';
 
-import {
-  Container,
-  type ContainerElement,
-  type ContainerProps,
-  type ContainerPropsWithRenderFunction,
+import type {
+  ContainerElement,
+  ContainerProps,
+  ContainerPropsWithRenderFunction,
 } from './container';
-import {
-  FLEX_JUSTIFY_CONTENT,
-  type FlexJustify,
-  getSpacing,
-  rc,
-  type Responsive,
-} from './styles';
+import {StyledFlex} from './generatedStyles';
+import type {FlexJustify, Responsive} from './styles';
 
-const omitFlexProps = new Set<keyof FlexLayoutProps | 'as'>([
-  'as',
-  'direction',
-  'flex',
-  'gap',
-  'display',
-  'align',
-  'justify',
-  'wrap',
-]);
-
-interface FlexLayoutProps {
+export interface FlexLayoutProps {
   /**
    * Aligns flex items along the cross axis of the current line of flex items.
    * Uses CSS align-items property.
@@ -66,39 +49,6 @@ export interface FlexProps<T extends ContainerElement = 'div'>
 export interface FlexPropsWithRenderFunction<T extends ContainerElement = 'div'>
   extends Omit<ContainerPropsWithRenderFunction<T>, 'display'>, FlexLayoutProps {}
 
-export const Flex = styled(Container, {
-  shouldForwardProp: prop => {
-    return !omitFlexProps.has(prop as keyof FlexLayoutProps | 'as');
-  },
-})<FlexProps<any> | FlexPropsWithRenderFunction<any>>`
-  ${p => rc('display', p.display ?? 'flex', p.theme)};
-  ${p => rc('order', p.order, p.theme)};
-  ${p => rc('gap', p.gap, p.theme, getSpacing)};
-
-  ${p => rc('flex-direction', p.direction, p.theme)};
-  ${p => rc('flex-wrap', p.wrap, p.theme)};
-  ${p => rc('flex', p.flex, p.theme)};
-  ${p =>
-    rc('justify-content', p.justify, p.theme, value =>
-      value === undefined ? undefined : FLEX_JUSTIFY_CONTENT[value]
-    )};
-
-  ${p =>
-    rc('align-items', p.align, p.theme, (value, _breakpoint, _theme) => {
-      switch (value) {
-        case 'start':
-          return 'flex-start';
-        case 'end':
-          return 'flex-end';
-        default:
-          return value;
-      }
-    })};
-  /**
-   * This cast is required because styled-components does not preserve the generic signature of the wrapped component.
-   * By default, the generic type parameter <T> is lost, so we use 'as unknown as' to restore the correct typing.
-   * https://github.com/styled-components/styled-components/issues/1803
-   */
-` as unknown as <T extends ContainerElement = 'div'>(
+export const Flex = StyledFlex as unknown as <T extends ContainerElement = 'div'>(
   props: FlexProps<T> | FlexPropsWithRenderFunction<T>
 ) => React.ReactElement;

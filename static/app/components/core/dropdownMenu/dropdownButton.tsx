@@ -1,9 +1,14 @@
-import {css} from '@emotion/react';
-import styled from '@emotion/styled';
+import type * as React from 'react';
+import {css, styled} from '@yak/react';
 import type {DistributedOmit} from 'type-fest';
 
 import type {ButtonProps} from '@sentry/scraps/button';
 import {Button} from '@sentry/scraps/button';
+// yak inlines static tokens into the CSS at build time. A theme token becomes a CSS variable.
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {size as sizeTokens} from '@sentry/scraps/tokens/size';
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {typography} from '@sentry/scraps/tokens/typography';
 
 import {IconChevron} from 'sentry/icons';
 
@@ -39,9 +44,9 @@ export function DropdownButton({
     <StyledButton
       aria-haspopup="true"
       aria-expanded={isOpen}
-      hasPrefix={!!prefix}
+      $hasPrefix={!!prefix}
+      $flat={isOpen || disabled}
       disabled={disabled}
-      isOpen={isOpen}
       size={size}
       ref={ref}
       {...props}
@@ -61,41 +66,35 @@ export function DropdownButton({
   );
 }
 
-const ChevronWrap = styled('div')`
+const ChevronWrap = styled.div`
   display: flex;
   align-items: center;
   margin-left: auto;
-  padding-left: ${p => p.theme.space.xs};
+  padding-left: ${sizeTokens.space.xs};
   flex-shrink: 0;
 `;
 
-interface StyledButtonProps extends Required<
-  Pick<DropdownButtonProps, 'isOpen' | 'disabled'>
-> {
-  hasPrefix?: boolean;
-}
-
-const StyledButton = styled(Button)<StyledButtonProps>`
+const StyledButton = styled(Button)<{$flat: boolean; $hasPrefix: boolean}>`
   position: relative;
   max-width: 100%;
 
-  ${p =>
-    (p.isOpen || p.disabled) &&
+  ${({$flat}) =>
+    $flat &&
     css`
       box-shadow: none;
     `}
-  ${p =>
-    p.hasPrefix &&
+  ${({$hasPrefix}) =>
+    $hasPrefix &&
     css`
-      font-weight: ${p.theme.font.weight.sans.regular};
+      font-weight: ${typography.font.weight.sans.regular};
     `}
 `;
 
-const LabelText = styled('span')`
+const LabelText = styled.span`
   &:after {
     content: ':';
   }
 
-  font-weight: ${p => p.theme.font.weight.sans.medium};
-  padding-right: ${p => p.theme.space.sm};
+  font-weight: ${typography.font.weight.sans.medium};
+  padding-right: ${sizeTokens.space.sm};
 `;

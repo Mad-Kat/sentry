@@ -1,5 +1,5 @@
 import {createContext, useContext, useMemo} from 'react';
-import styled from '@emotion/styled';
+import {styled} from '@yak/react';
 
 import {Separator, type SeparatorProps} from '@sentry/scraps/separator';
 

@@ -1,5 +1,3 @@
-import styled from '@emotion/styled';
-
 import {Flex, useResponsivePropValue} from '@sentry/scraps/layout';
 import {IndeterminateLoader} from '@sentry/scraps/loader';
 import {useSizeContext} from '@sentry/scraps/sizeContext';
@@ -8,11 +6,9 @@ import {useClickTracking} from '@sentry/scraps/trackingContext';
 
 import {IconDefaultsProvider} from 'sentry/icons/useIconDefaults';
 
-import {
-  DO_NOT_USE_BUTTON_ICON_SIZES as BUTTON_ICON_SIZES,
-  DO_NOT_USE_getButtonStyles as getButtonStyles,
-} from './styles';
-import type {DO_NOT_USE_ButtonProps as ButtonProps, ButtonSize} from './types';
+import {ButtonElement} from './buttonElement';
+import {DO_NOT_USE_BUTTON_ICON_SIZES as BUTTON_ICON_SIZES} from './styles';
+import type {DO_NOT_USE_ButtonProps as ButtonProps} from './types';
 import {useButtonFunctionality} from './useButtonFunctionality';
 
 function preventKeyboardSubmit(
@@ -59,11 +55,11 @@ export function Button({
       title={tooltipProps?.title}
       disabled={!tooltipProps?.title}
     >
-      <StyledButton
+      <ButtonElement
         aria-label={accessibleLabel}
         aria-busy={busy}
         disabled={useAriaDisabled ? undefined : disabled}
-        size={size}
+        $size={size}
         type={type}
         busy={busy}
         {...props}
@@ -113,16 +109,7 @@ export function Button({
             </Flex>
           )}
         </Flex>
-      </StyledButton>
+      </ButtonElement>
     </Tooltip>
   );
 }
-
-const StyledButton = styled('button')<
-  Omit<ButtonProps, 'size'> & {
-    shapeVariant: 'rectangular' | 'square';
-    size: ButtonSize;
-  }
->`
-  ${p => getButtonStyles(p)}
-`;

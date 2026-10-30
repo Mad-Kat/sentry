@@ -1,33 +1,17 @@
-import styled from '@emotion/styled';
+import type * as React from 'react';
 
 import type {CSS} from '@sentry/scraps/cssTypes';
 import type {SpaceSize} from '@sentry/scraps/theme';
 
-import {
-  Container,
-  type ContainerElement,
-  type ContainerProps,
-  type ContainerPropsWithRenderFunction,
+import type {
+  ContainerElement,
+  ContainerProps,
+  ContainerPropsWithRenderFunction,
 } from './container';
-import {getSpacing, rc, type Responsive} from './styles';
+import {StyledGrid} from './generatedStyles';
+import type {Responsive} from './styles';
 
-const omitGridProps = new Set<keyof GridLayoutProps | 'as'>([
-  'align',
-  'alignContent',
-  'as',
-  'autoColumns',
-  'autoRows',
-  'flow',
-  'gap',
-  'display',
-  'justify',
-  'justifyItems',
-  'areas',
-  'columns',
-  'rows',
-]);
-
-interface GridLayoutProps {
+export interface GridLayoutProps {
   /**
    * Aligns grid items along the column axis within their grid cells.
    * Uses CSS align-items property.
@@ -95,73 +79,6 @@ export type GridProps<T extends ContainerElement = 'div'> = ContainerProps<T> &
 export type GridPropsWithRenderFunction<T extends ContainerElement = 'div'> =
   ContainerPropsWithRenderFunction<T> & GridLayoutProps;
 
-export const Grid = styled(Container, {
-  shouldForwardProp: prop => {
-    return !omitGridProps.has(prop as keyof GridLayoutProps | 'as');
-  },
-})<GridProps<any> | GridPropsWithRenderFunction<any>>`
-  ${p => rc('display', p.display ?? 'grid', p.theme)}
-
-  ${p => rc('gap', p.gap, p.theme, getSpacing)};
-
-  ${p => rc('grid-template-columns', p.columns, p.theme)};
-  ${p => rc('grid-template-rows', p.rows, p.theme)};
-  ${p => rc('grid-template-areas', p.areas, p.theme)};
-  ${p => rc('grid-auto-columns', p.autoColumns, p.theme)};
-  ${p => rc('grid-auto-rows', p.autoRows, p.theme)};
-  ${p => rc('grid-auto-flow', p.flow, p.theme)};
-
-  ${p =>
-    rc('justify-content', p.justify, p.theme, (value, _breakpoint, _theme) => {
-      switch (value) {
-        case 'start':
-          return 'start';
-        case 'end':
-          return 'end';
-        case 'center':
-          return 'center';
-        case 'between':
-          return 'space-between';
-        case 'around':
-          return 'space-around';
-        case 'evenly':
-          return 'space-evenly';
-        case 'stretch':
-          return 'stretch';
-        default:
-          return value;
-      }
-    })};
-
-  ${p =>
-    rc('align-content', p.alignContent, p.theme, (value, _breakpoint, _theme) => {
-      switch (value) {
-        case 'start':
-          return 'start';
-        case 'end':
-          return 'end';
-        case 'center':
-          return 'center';
-        case 'between':
-          return 'space-between';
-        case 'around':
-          return 'space-around';
-        case 'evenly':
-          return 'space-evenly';
-        case 'stretch':
-          return 'stretch';
-        default:
-          return value;
-      }
-    })};
-
-  ${p => rc('align-items', p.align, p.theme)};
-  ${p => rc('justify-items', p.justifyItems, p.theme)};
-  /**
-   * This cast is required because styled-components does not preserve the generic signature of the wrapped component.
-   * By default, the generic type parameter <T> is lost, so we use 'as unknown as' to restore the correct typing.
-   * https://github.com/styled-components/styled-components/issues/1803
-   */
-` as unknown as <T extends ContainerElement = 'div'>(
+export const Grid = StyledGrid as unknown as <T extends ContainerElement = 'div'>(
   props: GridProps<T> | GridPropsWithRenderFunction<T>
 ) => React.ReactElement;

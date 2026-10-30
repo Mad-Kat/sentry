@@ -16,6 +16,7 @@ import type {
   ContainerBreakpointSize,
   RadiusSize,
   SpaceSize,
+  SurfaceVariant,
   Theme,
 } from '@sentry/scraps/theme';
 
@@ -186,8 +187,131 @@ export type ResponsiveKey = ContainerBreakpointSize | ScreenBreakpoint;
 
 export type Responsive<T> = T | Partial<Record<ResponsiveKey, T>>;
 
-function isResponsive(prop: unknown): prop is Partial<Record<ResponsiveKey, any>> {
+export function isResponsive(prop: unknown): prop is Partial<Record<ResponsiveKey, any>> {
   return typeof prop === 'object' && prop !== null;
+}
+
+// All keys in cascade order: the container scale, then the viewport scale.
+const RESPONSIVE_ORDER: readonly ResponsiveKey[] = [
+  ...CONTAINER_ORDER,
+  ...VIEWPORT_ORDER.map(e => e.key),
+];
+
+function firstKey(
+  value: Partial<Record<ResponsiveKey, unknown>>
+): ResponsiveKey | undefined {
+  return RESPONSIVE_ORDER.find(key => value[key] !== undefined);
+}
+
+/**
+ * The plain value, or the value of the first key of a responsive value. As in
+ * `rc()`, the first key applies at every size.
+ */
+export function baseValue<T>(value: Responsive<T> | undefined): T | undefined {
+  if (!isResponsive(value)) {
+    return value;
+  }
+  const key = firstKey(value);
+  return key === undefined ? undefined : value[key];
+}
+
+/**
+ * The value of a responsive prop at one key, without the values of other keys.
+ */
+export function responsiveAt<T>(
+  value: Responsive<T> | undefined,
+  key: ResponsiveKey
+): T | undefined {
+  return isResponsive(value) ? value[key] : undefined;
+}
+
+/**
+ * True when a responsive value sets this key and the key is not its first key.
+ * The first key is the base value, so it needs no breakpoint rule.
+ */
+export function laterKey(
+  value: Partial<Record<ResponsiveKey, unknown>>,
+  key: ResponsiveKey
+): boolean {
+  return value[key] !== undefined && firstKey(value) !== key;
+}
+
+export function flexJustify(justify: FlexJustify | undefined): string | undefined {
+  return justify === undefined ? undefined : FLEX_JUSTIFY_CONTENT[justify];
+}
+
+export function flexAlign(
+  align: 'start' | 'end' | 'center' | 'baseline' | 'stretch' | undefined
+): string | undefined {
+  switch (align) {
+    case 'start':
+      return 'flex-start';
+    case 'end':
+      return 'flex-end';
+    default:
+      return align;
+  }
+}
+
+/**
+ * Grid alignment keeps the grid keywords for `start` and `end`.
+ */
+export function gridContent(
+  value:
+    | 'start'
+    | 'end'
+    | 'center'
+    | 'between'
+    | 'around'
+    | 'evenly'
+    | 'stretch'
+    | undefined
+): string | undefined {
+  switch (value) {
+    case 'between':
+      return 'space-between';
+    case 'around':
+      return 'space-around';
+    case 'evenly':
+      return 'space-evenly';
+    default:
+      return value;
+  }
+}
+
+/**
+ * The background as a global theme variable, see `theme/themeVariables.tsx`.
+ */
+export function getBackground(
+  background: Exclude<SurfaceVariant, 'overlay'> | undefined
+): string | undefined {
+  return background ? `var(--tokens-background-${background})` : undefined;
+}
+
+function borderVariable(key: Exclude<BorderVariant, 'none'>): string {
+  if (key === 'primary') {
+    return 'var(--tokens-border-primary)';
+  }
+  if (key === 'muted' || key === 'secondary') {
+    return 'var(--tokens-border-secondary)';
+  }
+  return `var(--tokens-border-${key}-vibrant)`;
+}
+
+/**
+ * Like `getBorder`, with the colors as global theme variables.
+ */
+export function getBorderVariable(border: BorderVariant | undefined): string | undefined {
+  if (border === undefined) {
+    return undefined;
+  }
+  if (border === 'none') {
+    return 'none';
+  }
+  return border
+    .split(' ')
+    .map(b => `1px solid ${borderVariable(b as Exclude<BorderVariant, 'none'>)}`)
+    .join(' ');
 }
 
 /**

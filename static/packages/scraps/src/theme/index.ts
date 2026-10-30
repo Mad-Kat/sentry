@@ -1,3 +1,6 @@
+// The theme colors as global CSS variables for yak components.
+import './themeVariables';
+
 import type {darkTheme} from './dark';
 import type {lightTheme} from './light';
 

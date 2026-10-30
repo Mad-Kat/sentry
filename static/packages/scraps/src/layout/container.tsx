@@ -1,7 +1,4 @@
-import React, {useMemo, useRef} from 'react';
-import isPropValid from '@emotion/is-prop-valid';
-import styled from '@emotion/styled';
-import {mergeRefs} from '@react-aria/utils';
+import type * as React from 'react';
 
 import type {CSS} from '@sentry/scraps/cssTypes';
 import type {
@@ -11,21 +8,13 @@ import type {
   SurfaceVariant,
 } from '@sentry/scraps/theme';
 
-import {
-  ContainerQueryProvider,
-  getBorder,
-  getMargin,
-  getRadius,
-  getSpacing,
-  rc,
-  type Responsive,
-  type Shorthand,
-} from './styles';
+import {StyledContainer} from './generatedStyles';
+import type {Responsive, Shorthand} from './styles';
 
 type Margin = SpaceSize | 'auto' | '0';
 
 /* eslint-disable @sentry/sort-interface-keys */
-interface ContainerLayoutProps {
+export interface ContainerLayoutProps {
   background?: Responsive<Exclude<SurfaceVariant, 'overlay'>>;
   display?: Responsive<CSS['display']>;
 
@@ -176,7 +165,10 @@ export type ContainerPropsWithRenderFunction<T extends ContainerElement = 'div'>
   ContainerLayoutProps,
   'containerType'
 > & {
-  children: (props: {className: string}) => React.ReactNode | undefined;
+  children: (props: {
+    className: string;
+    style: React.CSSProperties | undefined;
+  }) => React.ReactNode | undefined;
   as?: never;
   /**
    * Declaring a query container is not supported with the render-prop form: the
@@ -201,187 +193,8 @@ export type ContainerPropsWithRenderFunction<T extends ContainerElement = 'div'>
     >
   >;
 
-const omitContainerProps = new Set<keyof ContainerLayoutProps | 'as'>([
-  'alignSelf',
-  'area',
-  'as',
-  'background',
-  'border',
-  'borderTop',
-  'borderBottom',
-  'borderLeft',
-  'borderRight',
-  'bottom',
-  'column',
-  'contain',
-  'cursor',
-  'display',
-  'flex',
-  'flexBasis',
-  'flexGrow',
-  'flexShrink',
-  'height',
-  'inset',
-  'justifySelf',
-  'left',
-  'margin',
-  'marginTop',
-  'marginBottom',
-  'marginLeft',
-  'marginRight',
-  'maxHeight',
-  'maxWidth',
-  'minHeight',
-  'minWidth',
-  'order',
-  'overflow',
-  'overflowX',
-  'overflowY',
-  'overscrollBehavior',
-  'pointerEvents',
-  'padding',
-  'paddingTop',
-  'paddingBottom',
-  'paddingLeft',
-  'paddingRight',
-  'position',
-  'radius',
-  'right',
-  'row',
-  'top',
-  'visibility',
-  'width',
-  'whiteSpace',
-]);
-
-export const Container = styled(
-  <T extends ContainerElement = 'div'>(
-    props: (ContainerProps<T> | ContainerPropsWithRenderFunction<T>) & {
-      className?: string;
-    }
-  ) => {
-    // Hooks must run unconditionally, before the render-prop early return.
-    const containerRef = useRef<HTMLElement>(null);
-    const {as, containerType, ref, ...rest} = props;
-
-    // A query container needs its size observed in JS so descendants can resolve
-    // container-mode responsive props (e.g. Stack orientation). We only attach a
-    // ref + observer when this element is actually a container, keeping the
-    // common (non-container) path free of any ResizeObserver overhead.
-    const isContainer = !!containerType && containerType !== 'normal';
-
-    const containerRefs = useMemo(
-      () => (isContainer ? mergeRefs(ref as React.Ref<any>, containerRef) : ref),
-      [isContainer, ref]
-    );
-
-    if (typeof props.children === 'function') {
-      // When using render prop, only pass className to the child function
-      return props.children({className: props.className ?? ''});
-    }
-
-    const Component = as ?? 'div';
-
-    const node = <Component {...(rest as any)} ref={containerRefs} />;
-
-    if (isContainer) {
-      return (
-        <ContainerQueryProvider elementRef={containerRef}>{node}</ContainerQueryProvider>
-      );
-    }
-
-    return node;
-  },
-  {
-    shouldForwardProp: prop => {
-      // containerType must reach the inner component to wire up the query
-      // container; it is stripped there so it never lands on the DOM.
-      if (prop === 'containerType') {
-        return true;
-      }
-      if (omitContainerProps.has(prop as keyof ContainerLayoutProps | 'as')) {
-        return false;
-      }
-      return isPropValid(prop);
-    },
-  }
-)<ContainerProps<any> | ContainerPropsWithRenderFunction<any>>`
-  ${p => rc('container-type', p.containerType, p.theme)};
-
-  ${p => rc('display', p.display, p.theme)};
-  ${p => rc('position', p.position, p.theme)};
-
-  ${p => rc('inset', p.inset, p.theme)};
-  ${p => rc('top', p.top, p.theme)};
-  ${p => rc('bottom', p.bottom, p.theme)};
-  ${p => rc('left', p.left, p.theme)};
-  ${p => rc('right', p.right, p.theme)};
-
-  ${p => rc('overflow', p.overflow, p.theme)};
-  ${p => rc('overflow-x', p.overflowX, p.theme)};
-  ${p => rc('overflow-y', p.overflowY, p.theme)};
-
-  ${p => rc('overscroll-behavior', p.overscrollBehavior, p.theme)};
-
-  ${p => rc('pointer-events', p.pointerEvents, p.theme)};
-
-  ${p => rc('cursor', p.cursor, p.theme)};
-  ${p => rc('contain', p.contain, p.theme)};
-
-  ${p => rc('padding', p.padding, p.theme, getSpacing)};
-  ${p => rc('padding-top', p.paddingTop, p.theme, getSpacing)};
-  ${p => rc('padding-bottom', p.paddingBottom, p.theme, getSpacing)};
-  ${p => rc('padding-left', p.paddingLeft, p.theme, getSpacing)};
-  ${p => rc('padding-right', p.paddingRight, p.theme, getSpacing)};
-
-  ${p => rc('margin', p.margin, p.theme, getMargin)};
-  ${p => rc('margin-top', p.marginTop, p.theme, getMargin)};
-  ${p => rc('margin-bottom', p.marginBottom, p.theme, getMargin)};
-  ${p => rc('margin-left', p.marginLeft, p.theme, getMargin)};
-  ${p => rc('margin-right', p.marginRight, p.theme, getMargin)};
-
-  ${p =>
-    rc('background', p.background, p.theme, v =>
-      v ? p.theme.tokens.background[v] : undefined
-    )};
-
-  ${p => rc('border-radius', p.radius, p.theme, getRadius)};
-
-  ${p => rc('width', p.width, p.theme)};
-  ${p => rc('min-width', p.minWidth, p.theme)};
-  ${p => rc('max-width', p.maxWidth, p.theme)};
-
-  ${p => rc('height', p.height, p.theme)};
-  ${p => rc('min-height', p.minHeight, p.theme)};
-  ${p => rc('max-height', p.maxHeight, p.theme)};
-
-  ${p => rc('grid-area', p.area, p.theme)};
-  ${p => rc('grid-row', p.row, p.theme)};
-  ${p => rc('grid-column', p.column, p.theme)};
-
-  ${p => rc('order', p.order, p.theme)};
-  ${p => rc('flex', p.flex, p.theme)};
-  ${p => rc('flex-grow', p.flexGrow, p.theme)};
-  ${p => rc('flex-shrink', p.flexShrink, p.theme)};
-  ${p => rc('flex-basis', p.flexBasis, p.theme)};
-
-  ${p => rc('align-self', p.alignSelf, p.theme)};
-  ${p => rc('justify-self', p.justifySelf, p.theme)};
-
-  ${p => rc('border', p.border, p.theme, getBorder)};
-  ${p => rc('border-top', p.borderTop, p.theme, getBorder)};
-  ${p => rc('border-bottom', p.borderBottom, p.theme, getBorder)};
-  ${p => rc('border-left', p.borderLeft, p.theme, getBorder)};
-  ${p => rc('border-right', p.borderRight, p.theme, getBorder)};
-
-  ${p => rc('visibility', p.visibility, p.theme)};
-  ${p => rc('white-space', p.whiteSpace, p.theme)};
-
-  /**
-   * This cast is required because styled-components does not preserve the generic signature of the wrapped component.
-   * By default, the generic type parameter <T> is lost, so we use 'as unknown as' to restore the correct typing.
-   * https://github.com/styled-components/styled-components/issues/1803
-   */
-` as unknown as <T extends ContainerElement = 'div'>(
+export const Container = StyledContainer as unknown as <
+  T extends ContainerElement = 'div',
+>(
   props: ContainerProps<T> | ContainerPropsWithRenderFunction<T>
 ) => React.ReactElement;
