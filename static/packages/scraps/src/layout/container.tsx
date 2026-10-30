@@ -34,7 +34,7 @@ import {
 type Margin = SpaceSize | 'auto' | '0';
 
 /* eslint-disable @sentry/sort-interface-keys */
-export interface ContainerLayoutProps {
+interface ContainerLayoutProps {
   background?: Responsive<Exclude<SurfaceVariant, 'overlay'>>;
   display?: Responsive<CSS['display']>;
 

@@ -8,7 +8,7 @@ const config = {
   testMatch: ['<rootDir>/src/**/*.spec.{ts,tsx}'],
   moduleNameMapper: {
     '^@sentry/scraps/(.*)$': '<rootDir>/src/$1',
-    '^data:text/css': '<rootDir>/test/env/styleMock.cjs',
+    '^data:text/css': '<rootDir>/test/env/styleMock.ts',
     '^@yak/react/context$': '<rootDir>/src/theme/yakContext.tsx',
   },
   transform: {

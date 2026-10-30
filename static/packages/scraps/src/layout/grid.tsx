@@ -21,7 +21,7 @@ import {
   type Responsive,
 } from './styles';
 
-export interface GridLayoutProps {
+interface GridLayoutProps {
   /**
    * Aligns grid items along the column axis within their grid cells.
    * Uses CSS align-items property.

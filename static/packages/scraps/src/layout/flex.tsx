@@ -24,7 +24,7 @@ import {
   type Responsive,
 } from './styles';
 
-export interface FlexLayoutProps {
+interface FlexLayoutProps {
   /**
    * Aligns flex items along the cross axis of the current line of flex items.
    * Uses CSS align-items property.
