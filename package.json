@@ -49,6 +49,7 @@
     "mkcert-localhost": "mkcert -key-file config/localhost-key.pem -cert-file config/localhost.pem localhost 127.0.0.1 dev.getsentry.net *.dev.getsentry.net && mkcert -install",
     "https-proxy": "caddy run --config - <<< '{\"apps\":{\"http\":{\"servers\":{\"srv0\":{\"listen\":[\":8003\"],\"routes\":[{\"handle\":[{\"handler\":\"reverse_proxy\",\"upstreams\":[{\"dial\":\"localhost:8000\"}]}]}],\"tls_connection_policies\":[{\"certificate_selection\":{\"any_tag\":[\"cert0\"]}}]}}},\"tls\":{\"certificates\":{\"load_files\":[{\"certificate\":\"./config/localhost.pem\",\"key\":\"./config/localhost-key.pem\",\"tags\":[\"cert0\"]}]}}}}'",
     "snapshots": "jest --config jest.config.snapshots.ts",
+    "gen:yak-layout": "node scripts/genYakLayoutStyles.ts",
     "knip": "knip",
     "knip:prod": "pnpm run knip --production --exclude dependencies"
   },
@@ -250,6 +251,7 @@
     "@types/d3-zoom": "^3.0.8",
     "@types/gettext-parser": "8.0.0",
     "@types/node": "24.13.2",
+    "@yak/react": "10.0.0",
     "eslint": "10.8.0",
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-import": "2.32.0",

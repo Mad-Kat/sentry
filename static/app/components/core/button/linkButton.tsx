@@ -1,27 +1,20 @@
-import isPropValid from '@emotion/is-prop-valid';
-import {type Theme} from '@emotion/react';
-import styled from '@emotion/styled';
 import type {LocationDescriptor} from 'history';
 import type {DistributedOmit} from 'type-fest';
 
 import {Flex, useResponsivePropValue} from '@sentry/scraps/layout';
-import {Link} from '@sentry/scraps/link';
 import {useSizeContext} from '@sentry/scraps/sizeContext';
 import {Tooltip} from '@sentry/scraps/tooltip';
-import {useClickTracking} from '@sentry/scraps/trackingContext';
 
 import {IconDefaultsProvider} from 'sentry/icons/useIconDefaults';
 
-import {
-  DO_NOT_USE_BUTTON_ICON_SIZES as BUTTON_ICON_SIZES,
-  DO_NOT_USE_getButtonStyles as getButtonStyles,
-} from './styles';
+import {ButtonElement, LinkButtonTag} from './buttonElement';
+import {DO_NOT_USE_BUTTON_ICON_SIZES as BUTTON_ICON_SIZES} from './styles';
 import type {ButtonSize, DO_NOT_USE_LinkButtonProps as LinkButtonProps} from './types';
 import {useButtonFunctionality} from './useButtonFunctionality';
 
 export type {LinkButtonProps};
 
-type ResolvedLinkButtonProps = DistributedOmit<LinkButtonProps, 'size'> & {
+export type ResolvedLinkButtonProps = DistributedOmit<LinkButtonProps, 'size'> & {
   size: ButtonSize;
 };
 
@@ -45,11 +38,12 @@ export function LinkButton({
       title={tooltipProps?.title}
       disabled={!tooltipProps?.title}
     >
-      <StyledLinkButton
+      <ButtonElement
+        component={LinkButtonTag}
         aria-label={accessibleLabel}
         aria-disabled={disabled}
         disabled={disabled}
-        size={size}
+        $size={size}
         {...props}
         shapeVariant={hasChildren ? 'rectangular' : 'square'}
         href={disabled ? undefined : 'href' in props ? props.href : undefined}
@@ -89,92 +83,7 @@ export function LinkButton({
           )}
           {props.children}
         </Flex>
-      </StyledLinkButton>
+      </ButtonElement>
     </Tooltip>
   );
 }
-
-const StyledLinkButton = styled(
-  ({
-    size: _size,
-    shapeVariant: _shapeVariant,
-    ...props
-  }: ResolvedLinkButtonProps & {shapeVariant: 'rectangular' | 'square'}) => {
-    const {handleClick} = useClickTracking(props, 'link');
-
-    if ('to' in props && props.to) {
-      const {openInNewTab, ...linkProps} = props;
-      return (
-        <Link
-          {...linkProps}
-          to={props.to}
-          role="button"
-          {...(openInNewTab ? {target: '_blank', rel: 'noreferrer noopener'} : {})}
-        />
-      );
-    }
-
-    if ('href' in props && props.href) {
-      const {
-        external,
-        analyticsEventKey: _analyticsEventKey,
-        analyticsEventName: _analyticsEventName,
-        analyticsParams: _analyticsParams,
-        busy: _busy,
-        variant: _variant,
-        ...rest
-      } = props;
-      return (
-        <a
-          {...rest}
-          onClick={handleClick}
-          {...(external ? {target: '_blank', rel: 'noreferrer noopener'} : {})}
-          role="button"
-        />
-      );
-    }
-
-    const {
-      external: _e,
-      replace: _r,
-      preventScrollReset: _p,
-      openInNewTab: _o,
-      analyticsEventKey: _analyticsEventKey,
-      analyticsEventName: _analyticsEventName,
-      analyticsParams: _analyticsParams,
-      busy: _busy,
-      variant: _variant,
-      ...rest
-      // cast because props cannot be statically determined at this point
-    } = props as any;
-    return <a {...rest} onClick={handleClick} role="button" />;
-  },
-  {
-    shouldForwardProp: prop =>
-      prop === 'analyticsEventKey' ||
-      prop === 'analyticsEventName' ||
-      prop === 'analyticsParams' ||
-      prop === 'busy' ||
-      prop === 'external' ||
-      prop === 'replace' ||
-      prop === 'preventScrollReset' ||
-      prop === 'openInNewTab' ||
-      prop === 'variant' ||
-      (typeof prop === 'string' && isPropValid(prop)),
-  }
-)<ResolvedLinkButtonProps>`
-  ${p => getLinkButtonStyles(p, p.theme)}
-`;
-
-const getLinkButtonStyles = (
-  p: ResolvedLinkButtonProps & {shapeVariant: 'rectangular' | 'square'},
-  theme: Theme
-) => {
-  const buttonStyles = getButtonStyles({...p, theme, shapeVariant: p.shapeVariant});
-  return {
-    ...(p.disabled || p.busy
-      ? {color: buttonStyles.color, ':hover': {color: buttonStyles.color}}
-      : undefined),
-    ...buttonStyles,
-  };
-};

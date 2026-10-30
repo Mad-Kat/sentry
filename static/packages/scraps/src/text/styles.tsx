@@ -1,6 +1,17 @@
+import type {Responsive} from '@sentry/scraps/layout/styles';
 import type {HeadingSize, TextSize, Theme} from '@sentry/scraps/theme';
 
 import type {BaseTextProps} from './text';
+
+/**
+ * The responsive props of Text and Heading.
+ */
+export interface TextLayoutProps {
+  align?: Responsive<'left' | 'center' | 'right' | 'justify'>;
+  density?: Responsive<keyof Theme['font']['lineHeight']>;
+  display?: Responsive<'inline' | 'block' | 'inline-block' | 'none'>;
+  size?: Responsive<TextSize | HeadingSize>;
+}
 
 export function getTextDecoration(p: Pick<BaseTextProps, 'strikethrough' | 'underline'>) {
   const decorations: string[] = [];
