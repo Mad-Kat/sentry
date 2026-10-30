@@ -58,7 +58,7 @@ describe('Surface', () => {
     expect(first).toEqual(second);
   });
 
-  it('applies different class names for different variants', () => {
+  it('applies different styles for different variants', () => {
     render(
       <Fragment>
         <Surface variant="primary">Primary</Surface>
@@ -68,16 +68,16 @@ describe('Surface', () => {
       {wrapper: ThemeWrapper}
     );
 
-    const primary = screen.getByText('Primary').className;
-    const secondary = screen.getByText('Secondary').className;
-    const overlay = screen.getByText('Overlay').className;
+    const primary = screen.getByText('Primary').getAttribute('style');
+    const secondary = screen.getByText('Secondary').getAttribute('style');
+    const overlay = screen.getByText('Overlay').getAttribute('style');
 
     expect(primary).not.toEqual(secondary);
     expect(primary).not.toEqual(overlay);
     expect(secondary).not.toEqual(overlay);
   });
 
-  it('applies different class names for different elevations', () => {
+  it('applies different styles for different elevations', () => {
     render(
       <Fragment>
         <Surface variant="overlay" elevation="low">
@@ -93,9 +93,9 @@ describe('Surface', () => {
       {wrapper: ThemeWrapper}
     );
 
-    const low = screen.getByText('Low').className;
-    const medium = screen.getByText('Medium').className;
-    const high = screen.getByText('High').className;
+    const low = screen.getByText('Low').getAttribute('style');
+    const medium = screen.getByText('Medium').getAttribute('style');
+    const high = screen.getByText('High').getAttribute('style');
     expect(low).not.toEqual(high);
     expect(medium).not.toEqual(high);
   });

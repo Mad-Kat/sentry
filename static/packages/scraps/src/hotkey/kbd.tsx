@@ -1,7 +1,13 @@
 import type * as React from 'react';
-import {css, useTheme} from '@emotion/react';
+import {css} from '@emotion/react';
+import {css as yakCss, styled} from '@yak/react';
 
 import type {Theme} from '@sentry/scraps/theme';
+// yak inlines static tokens into the CSS at build time. A theme token becomes a CSS variable.
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {size} from '@sentry/scraps/tokens/size';
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {typography} from '@sentry/scraps/tokens/typography';
 
 export const kbdStyles = (theme: Theme, variant?: KbdProps['variant']) => css`
   margin: 0;
@@ -44,7 +50,37 @@ interface KbdProps extends React.HTMLAttributes<HTMLElement> {
   variant?: 'embossed' | 'debossed';
 }
 
-export function Kbd(props: KbdProps) {
-  const theme = useTheme();
-  return <kbd css={kbdStyles(theme, props.variant)} {...props} />;
+export function Kbd({variant, ...props}: KbdProps) {
+  return <StyledKbd $variant={variant} {...props} />;
 }
+
+const StyledKbd = styled.kbd<{$variant: KbdProps['variant']}>`
+  margin: 0;
+  padding: 0 ${size.space.xs};
+  height: 1.67em; /* 20px */
+
+  font-family: ${typography.font.family.mono};
+  font-size: ${typography.font.size.sm};
+  font-weight: ${typography.font.weight.sans.medium};
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: ${size.border.md} solid ${({theme}) => theme.tokens.border.primary};
+  border-radius: ${size.radius.sm};
+  box-shadow: none;
+
+  ${({$variant}) =>
+    $variant === 'debossed'
+      ? yakCss`
+          color: ${({theme}) => theme.tokens.content.secondary};
+          background: ${({theme}) => theme.tokens.background.secondary};
+          border-top: ${size.border.xl} solid ${({theme}) => theme.tokens.border.primary};
+        `
+      : yakCss`
+          color: ${({theme}) => theme.tokens.content.primary};
+          background: ${({theme}) => theme.tokens.background.primary};
+          border-bottom: ${size.border.xl} solid ${({theme}) => theme.tokens.border.primary};
+        `}
+`;

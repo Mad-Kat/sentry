@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {createRequire} from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
@@ -31,7 +32,16 @@ const swcConfig: SwcOptions = {
       },
     },
     experimental: {
-      plugins: [[fileURLToPath(import.meta.resolve('@swc-contrib/mut-cjs-exports')), {}]],
+      plugins: [
+        [
+          createRequire(import.meta.resolve('@yak/react')).resolve('@yak/swc'),
+          {
+            basePath: rootDir,
+            importMode: {value: 'data:text/css;base64,', encoding: 'Base64'},
+          },
+        ],
+        [fileURLToPath(import.meta.resolve('@swc-contrib/mut-cjs-exports')), {}],
+      ],
     },
   },
 };
@@ -257,6 +267,7 @@ const ESM_NODE_MODULES = [
   'color',
   'marked',
   '@sentry\\+sqlish',
+  '@yak\\+react',
 ];
 
 const config: Config.InitialOptions = {
@@ -273,6 +284,8 @@ const config: Config.InitialOptions = {
   moduleNameMapper: {
     '\\.(css|less|png|gif|jpg|avif|webp|woff|mp4)$':
       '<rootDir>/tests/js/sentry-test/mocks/importStyleMock.js',
+    '^data:text/css': '<rootDir>/tests/js/sentry-test/mocks/importStyleMock.js',
+    '^@yak/react/context$': '<rootDir>/static/packages/scraps/src/theme/yakContext.tsx',
     '^sentry/stories/storyManifest\\.generated$':
       '<rootDir>/tests/js/sentry-test/mocks/storyManifestMock.ts',
     '^\\./storyManifest\\.generated$':

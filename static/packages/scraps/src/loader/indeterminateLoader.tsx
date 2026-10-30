@@ -1,12 +1,7 @@
 import type * as React from 'react';
 import {useRef, useState} from 'react';
-import {keyframes, useTheme} from '@emotion/react';
-import styled from '@emotion/styled';
 import {useResizeObserver} from '@react-aria/utils';
-
-// Load the standalone Emotion theme augmentation without a runtime import.
-// eslint-disable-next-line unicorn/require-module-specifiers
-import type {} from '@sentry/scraps/theme';
+import {css, keyframes, styled} from '@yak/react';
 
 interface IndeterminateLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'vibrant' | 'monochrome';
@@ -60,7 +55,6 @@ export function IndeterminateLoader({
   variant = 'vibrant',
   ...props
 }: IndeterminateLoaderProps) {
-  const theme = useTheme();
   const {ref, duration, delay} = useAnimationTiming();
 
   return (
@@ -68,35 +62,25 @@ export function IndeterminateLoader({
       ref={ref}
       role="progressbar"
       aria-label="Loading"
-      opacity={variant === 'monochrome' ? '0.2' : '1'}
-      color={variant === 'monochrome' ? 'currentColor' : theme.tokens.border.secondary}
+      $variant={variant}
       {...props}
     >
       <ColorMask>
+        <Bar $variant={variant} $speed="slow" $duration={`${duration}s`} $delay="0s" />
         <Bar
-          color={
-            variant === 'monochrome' ? 'currentColor' : theme.tokens.border.accent.vibrant
-          }
-          animation={indeterminateSlow}
-          timing="cubic-bezier(0.4, 0.0, 0.2, 1)"
-          duration={`${duration}s`}
-          delay="0s"
-        />
-        <Bar
-          color={
-            variant === 'monochrome' ? 'currentColor' : theme.tokens.border.accent.vibrant
-          }
-          animation={indeterminateFast}
-          timing="cubic-bezier(0.4, 0.0, 0.2, 1)"
-          duration={`${duration}s`}
-          delay={`${delay}s`}
+          $variant={variant}
+          $speed="fast"
+          $duration={`${duration}s`}
+          $delay={`${delay}s`}
         />
       </ColorMask>
     </Track>
   );
 }
 
-const Track = styled('div')<{color: string; opacity: string}>`
+type Variant = IndeterminateLoaderProps['variant'];
+
+const Track = styled.div<{$variant: Variant}>`
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -107,8 +91,6 @@ const Track = styled('div')<{color: string; opacity: string}>`
     content: '';
     position: absolute;
     inset: 0;
-    background: ${p => p.color};
-    opacity: ${p => p.opacity};
     mask-image: ${SQUIGGLE_TILE};
     mask-repeat: repeat-x;
     mask-size: 16px 8px;
@@ -116,9 +98,23 @@ const Track = styled('div')<{color: string; opacity: string}>`
     -webkit-mask-repeat: repeat-x;
     -webkit-mask-size: 16px 8px;
   }
+
+  ${({$variant}) =>
+    $variant === 'monochrome'
+      ? css`
+          &::before {
+            background: currentColor;
+            opacity: 0.2;
+          }
+        `
+      : css`
+          &::before {
+            background: ${({theme}) => theme.tokens.border.secondary};
+          }
+        `}
 `;
 
-const ColorMask = styled('span')`
+const ColorMask = styled.span`
   position: absolute;
   inset: 0;
   mask-image: ${SQUIGGLE_TILE};
@@ -129,19 +125,38 @@ const ColorMask = styled('span')`
   -webkit-mask-size: 16px 8px;
 `;
 
-const Bar = styled('span')<{
-  animation: ReturnType<typeof keyframes>;
-  color: string;
-  delay: string;
-  duration: string;
-  timing: string;
+const Bar = styled.span<{
+  $delay: string;
+  $duration: string;
+  $speed: 'slow' | 'fast';
+  $variant: Variant;
 }>`
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-  background: ${p => p.color};
-  animation: ${p => p.animation} ${p => p.duration} ${p => p.timing} ${p => p.delay}
-    infinite backwards;
+  animation-duration: ${({$duration}) => $duration};
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-delay: ${({$delay}) => $delay};
+  animation-iteration-count: infinite;
+  animation-fill-mode: backwards;
+
+  ${({$speed}) =>
+    $speed === 'slow'
+      ? css`
+          animation-name: ${indeterminateSlow};
+        `
+      : css`
+          animation-name: ${indeterminateFast};
+        `}
+
+  ${({$variant}) =>
+    $variant === 'monochrome'
+      ? css`
+          background: currentColor;
+        `
+      : css`
+          background: ${({theme}) => theme.tokens.border.accent.vibrant};
+        `}
 `;

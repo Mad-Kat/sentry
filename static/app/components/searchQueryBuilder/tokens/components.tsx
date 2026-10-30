@@ -37,7 +37,7 @@ export function FilterWrapper({children, ...props}: FilterWrapperProps) {
       {...props}
     >
       {typeof children === 'function'
-        ? children({className: props.className ?? ''})
+        ? children({className: props.className ?? '', style: props.style})
         : children}
     </StyledFilterWrapper>
   );

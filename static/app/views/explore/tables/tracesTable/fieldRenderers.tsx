@@ -599,7 +599,12 @@ export function TraceIdRenderer({
   return (
     <Container minWidth="66px">
       {props => (
-        <Link to={target} style={{textAlign: 'right'}} onClick={onClick} {...props}>
+        <Link
+          to={target}
+          onClick={onClick}
+          {...props}
+          style={{...props.style, textAlign: 'right'}}
+        >
           {shortId}
         </Link>
       )}

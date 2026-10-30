@@ -1,12 +1,14 @@
 import type * as React from 'react';
-import isPropValid from '@emotion/is-prop-valid';
-import {css} from '@emotion/react';
-import styled from '@emotion/styled';
+import {css, styled} from '@yak/react';
 
-import {rc, type Responsive} from '@sentry/scraps/layout';
+import type {Responsive} from '@sentry/scraps/layout';
 import type {ContentVariant, TextSize, Theme} from '@sentry/scraps/theme';
+// yak inlines static tokens into the CSS at build time. A theme token becomes a CSS variable.
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {typography} from '@sentry/scraps/tokens/typography';
 
-import {getFontSize, getLineHeight, getTextDecoration} from './styles';
+import {getFontVariantNumeric, getTextColor, getTextDecoration} from './styles';
+import {TextElement} from './textElement';
 
 export interface BaseTextProps {
   /**
@@ -177,7 +179,6 @@ type TextPrimitive = 'span' | 'p' | 'label' | 'div' | 'time' | 'legend';
 type DisplayValue = 'inline' | 'block' | 'inline-block' | 'none';
 
 type TextStyleProps = BaseTextProps & {
-  theme: Theme;
   as?: TextPrimitive;
   display?: Responsive<DisplayValue>;
   size?: Responsive<TextSize>;
@@ -206,71 +207,23 @@ function getNativeDisplay(as: TextPrimitive | undefined): DisplayValue {
  * For a responsive prop we seed the base (`zero`) slot when the consumer left it unset
  * (with the derived default, or the element's native display when there is none)
  * so unspecified small breakpoints keep the sensible default instead of inheriting the value of
- * the smallest specified breakpoint (which `rc` would otherwise make the base).
+ * the smallest specified breakpoint (which would otherwise become the base).
  */
-function resolveDisplay(p: TextStyleProps): string | undefined {
+function getTextDisplay(p: TextStyleProps): Responsive<DisplayValue> | undefined {
   const fallback = getDefaultDisplay(p);
 
   if (p.display === undefined) {
-    return fallback ? `display: ${fallback};` : undefined;
+    return fallback;
   }
 
   if (typeof p.display === 'string') {
-    return `display: ${p.display};`;
+    return p.display;
   }
 
-  const value =
-    p.display.zero === undefined
-      ? {zero: fallback ?? getNativeDisplay(p.as), ...p.display}
-      : p.display;
-
-  return rc('display', value, p.theme);
+  return p.display.zero === undefined
+    ? {zero: fallback ?? getNativeDisplay(p.as), ...p.display}
+    : p.display;
 }
-
-export const getTextStyles = (p: TextStyleProps) => css`
-  ${rc('font-size', p.size, p.theme, v => getFontSize(v, p.theme))};
-  ${rc('line-height', p.density, p.theme, v => getLineHeight(v, p.theme))};
-  ${resolveDisplay(p)};
-  ${rc('text-align', p.align, p.theme)};
-
-  font-style: ${p.italic ? 'italic' : undefined};
-  text-decoration: ${getTextDecoration(p)};
-  cursor: ${p.cursor ?? undefined};
-
-  color: ${
-    p.variant === 'inherit'
-      ? undefined
-      : p.theme.tokens.content[
-          p.variant === 'muted' ? 'secondary' : (p.variant ?? 'primary')
-        ]
-  };
-
-  overflow: ${p.ellipsis ? 'hidden' : undefined};
-  text-overflow: ${p.ellipsis ? 'ellipsis' : undefined};
-  white-space: ${p.wrap ? p.wrap : p.ellipsis ? 'nowrap' : undefined};
-  text-wrap: ${p.textWrap ?? undefined};
-  word-break: ${p.wordBreak ?? undefined};
-  width: ${p.ellipsis ? '100%' : undefined};
-
-  font-family: ${p.theme.font.family[p.monospace ? 'mono' : 'sans']};
-  font-weight: ${
-    p.bold === true
-      ? p.theme.font.weight[p.monospace ? 'mono' : 'sans'].medium
-      : p.bold === false
-        ? p.theme.font.weight[p.monospace ? 'mono' : 'sans'].regular
-        : undefined
-  };
-  font-variant-numeric: ${[
-    p.tabular ? 'tabular-nums' : undefined,
-    p.fraction ? 'diagonal-fractions' : undefined,
-  ]
-    .filter(Boolean)
-    .join(' ')};
-  text-transform: ${p.uppercase ? 'uppercase' : undefined};
-
-  text-box-edge: text text;
-  text-box-trim: ${p.trim === false ? 'none' : 'trim-both'};
-`;
 
 export type TextProps<T extends TextPrimitive> = TextAttributes<T> &
   ExclusiveTextEllipsisProps;
@@ -278,7 +231,10 @@ export type TextProps<T extends TextPrimitive> = TextAttributes<T> &
 export type TextPropsWithRenderFunction<T extends TextPrimitive = 'span'> =
   BaseTextProps &
     ExclusiveTextEllipsisProps & {
-      children: (props: {className: string}) => React.ReactNode | undefined;
+      children: (props: {
+        className: string;
+        style: React.CSSProperties | undefined;
+      }) => React.ReactNode | undefined;
       as?: never;
       color?: never;
       dateTime?: never;
@@ -300,35 +256,102 @@ export type TextPropsWithRenderFunction<T extends TextPrimitive = 'span'> =
       >
     >;
 
-export const Text = styled(
-  <T extends TextPrimitive = 'span'>(
-    props: (TextProps<T> | TextPropsWithRenderFunction<T>) & {className?: string}
-  ) => {
-    if (typeof props.children === 'function') {
-      // When using render prop, only pass className to the child function
-      return props.children({className: props.className ?? ''});
-    }
-    const {children, ...rest} = props as TextProps<T>;
-    const Component = props.as || 'span';
-    return <Component {...(rest as any)}>{children}</Component>;
-  },
-  {
-    shouldForwardProp: p => isPropValid(p),
-  }
-)`
-  ${getTextStyles}
+export const Text = styled(TextElement).attrs<TextStyleProps>(p => ({
+  display: getTextDisplay(p),
+}))<TextStyleProps>`
+  ${({italic}) =>
+    italic &&
+    css`
+      font-style: italic;
+    `}
+  ${({strikethrough, underline}) =>
+    (strikethrough || underline) &&
+    css<TextStyleProps>`
+      text-decoration: ${p => getTextDecoration(p)};
+    `}
+  ${({cursor}) =>
+    cursor !== undefined &&
+    css<TextStyleProps>`
+      cursor: ${({cursor}) => cursor};
+    `}
+  ${({variant}) =>
+    variant !== 'inherit' &&
+    css<TextStyleProps>`
+      color: ${({variant, theme}) => getTextColor(variant, theme)};
+    `}
+  ${({ellipsis}) =>
+    ellipsis &&
+    css`
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    `}
+  ${({ellipsis, wrap}) =>
+    (ellipsis || wrap !== undefined) &&
+    css<TextStyleProps>`
+      white-space: ${({wrap}) => wrap ?? 'nowrap'};
+    `}
+  ${({textWrap}) =>
+    textWrap !== undefined &&
+    css<TextStyleProps>`
+      text-wrap: ${({textWrap}) => textWrap};
+    `}
+  ${({wordBreak}) =>
+    wordBreak !== undefined &&
+    css<TextStyleProps>`
+      word-break: ${({wordBreak}) => wordBreak};
+    `}
 
-  /**
-   * Reset any margin or padding that might be set by the global CSS styles.
-   */
+  ${({monospace}) =>
+    monospace
+      ? css`
+          font-family: ${typography.font.family.mono};
+        `
+      : css`
+          font-family: ${typography.font.family.sans};
+        `}
+  ${({bold, monospace}) =>
+    bold === true &&
+    (monospace
+      ? css`
+          font-weight: ${typography.font.weight.mono.medium};
+        `
+      : css`
+          font-weight: ${typography.font.weight.sans.medium};
+        `)}
+  ${({bold, monospace}) =>
+    bold === false &&
+    (monospace
+      ? css`
+          font-weight: ${typography.font.weight.mono.regular};
+        `
+      : css`
+          font-weight: ${typography.font.weight.sans.regular};
+        `)}
+  ${({fraction, tabular}) =>
+    (fraction || tabular) &&
+    css<TextStyleProps>`
+      font-variant-numeric: ${p => getFontVariantNumeric(p)};
+    `}
+  ${({uppercase}) =>
+    uppercase &&
+    css`
+      text-transform: uppercase;
+    `}
+
+  text-box-edge: text text;
+  ${({trim}) =>
+    trim === false
+      ? css`
+          text-box-trim: none;
+        `
+      : css`
+          text-box-trim: trim-both;
+        `}
+
+  /* Reset any margin or padding that might be set by the global CSS styles. */
   margin: 0;
   padding: 0;
-
-  /**
-   * This cast is required because styled-components does not preserve the generic signature of the wrapped component.
-   * By default, the generic type parameter <T> is lost, so we use 'as unknown as' to restore the correct typing.
-   * https://github.com/styled-components/styled-components/issues/1803
-   */
 ` as unknown as <T extends TextPrimitive = 'span'>(
   props: TextProps<T> | TextPropsWithRenderFunction<T>
 ) => React.ReactElement;

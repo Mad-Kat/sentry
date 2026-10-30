@@ -1,12 +1,15 @@
 import type * as React from 'react';
-import isPropValid from '@emotion/is-prop-valid';
-import styled from '@emotion/styled';
+import {css, styled} from '@yak/react';
 
-import {rc, type Responsive} from '@sentry/scraps/layout';
+import type {Responsive} from '@sentry/scraps/layout';
 import type {HeadingSize} from '@sentry/scraps/theme';
+// yak inlines static tokens into the CSS at build time. A theme token becomes a CSS variable.
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {typography} from '@sentry/scraps/tokens/typography';
 
-import {getFontSize, getLineHeight, getTextDecoration} from './styles';
+import {getFontVariantNumeric, getTextColor, getTextDecoration} from './styles';
 import {type BaseTextProps} from './text';
+import {TextElement} from './textElement';
 
 type BaseHeadingProps = Omit<BaseTextProps, 'bold' | 'uppercase' | 'trim'>;
 
@@ -40,7 +43,10 @@ export type HeadingProps = BaseHeadingProps & {
 
 export type HeadingPropsWithRenderFunction = BaseHeadingProps &
   ExclusiveHeadingEllipsisProps & {
-    children: (props: {className: string}) => React.ReactNode | undefined;
+    children: (props: {
+      className: string;
+      style: React.CSSProperties | undefined;
+    }) => React.ReactNode | undefined;
     as?: never;
     ref?: never;
     size?: Responsive<HeadingSize>;
@@ -59,77 +65,97 @@ export type HeadingPropsWithRenderFunction = BaseHeadingProps &
     >
   >;
 
-export const Heading = styled(
-  (props: (HeadingProps | HeadingPropsWithRenderFunction) & {className?: string}) => {
-    if (typeof props.children === 'function') {
-      // When using render prop, only pass className to the child function
-      return props.children({className: props.className ?? ''});
-    }
-    const {children, as, ...rest} = props as HeadingProps;
-    const HeadingComponent = as;
+type HeadingStyleProps = BaseHeadingProps & {
+  as?: HeadingProps['as'];
+  size?: Responsive<HeadingSize>;
+};
 
-    return <HeadingComponent {...rest}>{children}</HeadingComponent>;
-  },
-  {
-    shouldForwardProp: p => isPropValid(p),
-  }
-)`
-  ${p =>
-    p.variant === 'inherit' && p.size === undefined
-      ? 'font-size: inherit'
-      : rc(
-          'font-size',
-          p.size ?? (p.as ? getDefaultHeadingFontSize(p.as) : undefined),
-          p.theme,
-          v => {
-            return getFontSize(v, p.theme);
-          }
-        )};
-  ${p =>
-    p.variant === 'inherit' && p.density === undefined
-      ? 'line-height: inherit'
-      : rc('line-height', p.density, p.theme, v => getLineHeight(v, p.theme))};
-  ${p => rc('text-align', p.align, p.theme)};
+export const Heading = styled(TextElement).attrs<HeadingStyleProps>(p => ({
+  // An inherited heading keeps the parent font size unless it sets a size.
+  size:
+    p.size ??
+    (p.variant === 'inherit' || !p.as ? undefined : getDefaultHeadingFontSize(p.as)),
+}))<HeadingStyleProps>`
+  ${({size, variant}) =>
+    variant === 'inherit' &&
+    size === undefined &&
+    css`
+      font-size: inherit;
+    `}
+  ${({density, variant}) =>
+    variant === 'inherit' &&
+    density === undefined &&
+    css`
+      line-height: inherit;
+    `}
+  ${({italic}) =>
+    italic &&
+    css`
+      font-style: italic;
+    `}
+  ${({strikethrough, underline}) =>
+    (strikethrough || underline) &&
+    css<HeadingStyleProps>`
+      text-decoration: ${p => getTextDecoration(p)};
+    `}
+  ${({variant}) =>
+    variant !== 'inherit' &&
+    css<HeadingStyleProps>`
+      color: ${({variant, theme}) => getTextColor(variant, theme)};
+    `}
+  ${({ellipsis}) =>
+    ellipsis &&
+    css`
+      overflow: hidden;
+      text-overflow: ellipsis;
+    `}
+  ${({ellipsis, wrap}) =>
+    (ellipsis || wrap !== undefined) &&
+    css<HeadingStyleProps>`
+      white-space: ${({wrap}) => wrap ?? 'nowrap'};
+    `}
+  ${({textWrap}) =>
+    textWrap !== undefined &&
+    css<HeadingStyleProps>`
+      text-wrap: ${({textWrap}) => textWrap};
+    `}
+  ${({wordBreak}) =>
+    wordBreak !== undefined &&
+    css<HeadingStyleProps>`
+      word-break: ${({wordBreak}) => wordBreak};
+    `}
 
-  font-style: ${p => (p.italic ? 'italic' : undefined)};
-
-  text-decoration: ${p => getTextDecoration(p)};
-
-  color: ${p =>
-    p.variant === 'inherit'
-      ? undefined
-      : p.theme.tokens.content[
-          p.variant === 'muted' ? 'secondary' : (p.variant ?? 'primary')
-        ]};
-
-  overflow: ${p => (p.ellipsis ? 'hidden' : undefined)};
-  text-overflow: ${p => (p.ellipsis ? 'ellipsis' : undefined)};
-  white-space: ${p => (p.wrap ? p.wrap : p.ellipsis ? 'nowrap' : undefined)};
-  text-wrap: ${p => p.textWrap ?? undefined};
-  word-break: ${p => p.wordBreak ?? undefined};
-
-  font-family: ${p => p.theme.font.family[p.monospace ? 'mono' : 'sans']};
-  font-weight: ${p =>
-    p.variant === 'inherit'
-      ? 'inherit'
-      : p.theme.font.weight[p.monospace ? 'mono' : 'sans'].medium};
-  font-variant-numeric: ${p =>
-    [
-      p.tabular ? 'tabular-nums' : undefined,
-      p.fraction ? 'diagonal-fractions' : undefined,
-    ]
-      .filter(Boolean)
-      .join(' ')};
+  ${({monospace}) =>
+    monospace
+      ? css`
+          font-family: ${typography.font.family.mono};
+        `
+      : css`
+          font-family: ${typography.font.family.sans};
+        `}
+  ${({variant}) =>
+    variant === 'inherit'
+      ? css`
+          font-weight: inherit;
+        `
+      : css`
+          font-weight: ${typography.font.weight.sans.medium};
+        `}
+  ${({fraction, tabular}) =>
+    (fraction || tabular) &&
+    css<HeadingStyleProps>`
+      font-variant-numeric: ${p => getFontVariantNumeric(p)};
+    `}
 
   text-box-edge: text text;
   text-box-trim: trim-both;
 
-  /**
-   * Reset any margin or padding that might be set by the global CSS styles.
-   */
+  /* Reset any margin or padding that might be set by the global CSS styles. */
   margin: 0;
   padding: 0;
-`;
+` as unknown as (
+  props: HeadingProps | HeadingPropsWithRenderFunction
+) => React.ReactElement;
 
 function getDefaultHeadingFontSize(as: HeadingProps['as']): HeadingSize {
   switch (as) {

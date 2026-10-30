@@ -1,9 +1,12 @@
 import {Fragment, type ReactNode} from 'react';
-import styled from '@emotion/styled';
+import {styled} from '@yak/react';
 
 import {Stack} from '@sentry/scraps/layout';
 import type {StackProps} from '@sentry/scraps/layout';
 import {Text} from '@sentry/scraps/text/text';
+// yak inlines static tokens into the CSS at build time. A theme token becomes a CSS variable.
+// oxlint-disable-next-line @sentry/scraps/no-token-import
+import {size} from '@sentry/scraps/tokens';
 
 // interface + type union because `extends` doesn't play nicely with generics
 interface QuoteBaseProps {
@@ -21,9 +24,7 @@ export function Quote(props: QuoteProps) {
   return (
     <Stack gap="md" as="figure" position="relative" {...spreadProps}>
       <Line aria-orientation="vertical" />
-      <Blockquote cite={props.source?.href} as="blockquote">
-        {children}
-      </Blockquote>
+      <Blockquote cite={props.source?.href}>{children}</Blockquote>
       {props.source ? (
         <Caption>
           <Text as="p">
@@ -41,7 +42,7 @@ export function Quote(props: QuoteProps) {
   );
 }
 
-const Line = styled('hr')`
+const Line = styled.hr`
   position: absolute;
   top: 0;
   bottom: 0;
@@ -50,27 +51,23 @@ const Line = styled('hr')`
   border: none;
   height: 100%;
   width: 1px;
-  padding-left: ${p => p.theme.space.xl};
-  margin-left: ${p => p.theme.space.lg};
-  border-left: 1px solid ${p => p.theme.tokens.border.primary};
+  padding-left: ${size.space.xl};
+  margin-left: ${size.space.lg};
+  border-left: 1px solid ${({theme}) => theme.tokens.border.primary};
 `;
 
-const Blockquote = styled('blockquote')`
-  /**
-   * Reset any properties that might be set by the global CSS styles.
-   */
+const Blockquote = styled.blockquote`
+  /* Reset any properties that might be set by the global CSS styles. */
   margin: 0;
   padding: 0;
   border: none;
-  padding-left: calc(${p => `${p.theme.space.xl} + ${p.theme.space.lg}`});
+  padding-left: calc(${size.space.xl} + ${size.space.lg});
 `;
 
-const Caption = styled('figcaption')`
-  /**
-   * Reset any properties that might be set by the global CSS styles.
-   */
+const Caption = styled.figcaption`
+  /* Reset any properties that might be set by the global CSS styles. */
   margin: 0;
   padding: 0;
   border: none;
-  padding-left: calc(${p => `${p.theme.space.xl} + ${p.theme.space.lg}`});
+  padding-left: calc(${size.space.xl} + ${size.space.lg});
 `;

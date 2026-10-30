@@ -1,10 +1,7 @@
 import type * as React from 'react';
-import isPropValid from '@emotion/is-prop-valid';
-import {css} from '@emotion/react';
-import styled from '@emotion/styled';
+import {css, styled} from '@yak/react';
 
-import {getTextStyles} from '@sentry/scraps/text/text';
-import type {ButtonVariant, Theme} from '@sentry/scraps/theme';
+import type {ButtonVariant} from '@sentry/scraps/theme';
 import {type AnalyticsProps, useClickTracking} from '@sentry/scraps/trackingContext';
 
 import {useLinkBehavior} from './linkBehaviorContext';
@@ -50,44 +47,45 @@ export type LinkDestination =
   | {to: LinkProps['to']; externalHref?: never}
   | {externalHref: string; to?: never};
 
-const getLinkStyles = ({
-  disabled,
-  theme,
-}: {
-  theme: Theme;
-  disabled?: LinkProps['disabled'];
-}) => css`
+const linkStyles = css<{$disabled?: boolean}>`
+  text-box-edge: text text;
+  text-box-trim: trim-both;
+  font-family: inherit;
   border-radius: 2px;
-  pointer-events: ${disabled ? 'none' : undefined};
-  color: ${
-    disabled ? theme.tokens.content.disabled : theme.tokens.interactive.link.accent.rest
-  };
+  color: ${({theme}) => theme.tokens.interactive.link.accent.rest};
 
   &:hover,
   &:focus-visible {
-    color: ${
-      disabled
-        ? theme.tokens.content.disabled
-        : theme.tokens.interactive.link.accent.hover
-    };
+    color: ${({theme}) => theme.tokens.interactive.link.accent.hover};
   }
 
   &:focus-visible {
     text-decoration: none;
-    ${theme.focusRing()}
+    outline: none;
+    box-shadow:
+      0 0 0 0 ${({theme}) => theme.tokens.background.primary},
+      0 0 0 2px ${({theme}) => theme.tokens.focus.default};
   }
+
+  ${({$disabled}) =>
+    $disabled &&
+    css`
+      pointer-events: none;
+
+      &,
+      &:hover,
+      &:focus-visible {
+        color: ${({theme}) => theme.tokens.content.disabled};
+      }
+    `}
 `;
 
-const getLinkTextStyles = ({theme}: {theme: Theme}) => css`
-  ${getTextStyles({theme, variant: 'inherit'})}
-  font-family: inherit;
-`;
-
-const Anchor = styled('a', {
-  shouldForwardProp: prop => isPropValid(prop) && prop !== 'disabled',
-})<{disabled?: LinkProps['disabled']}>`
-  ${getLinkTextStyles}
-  ${getLinkStyles}
+// The `disabled` attribute is not valid on an anchor, so it becomes a style prop.
+const Anchor = styled.a.attrs<{disabled?: LinkProps['disabled']}>(({disabled}) => ({
+  $disabled: disabled,
+  disabled: undefined,
+}))<{$disabled?: boolean}>`
+  ${linkStyles}
 `;
 
 type LinkPropsWithButtonBehavior = LinkProps & {
@@ -127,9 +125,10 @@ function LinkBase(props: LinkPropsWithButtonBehavior) {
   return <Component {...linkProps} onClick={handleClick} />;
 }
 
-const StyledLink = styled(LinkBase)`
-  ${getLinkTextStyles}
-  ${getLinkStyles}
+const StyledLink = styled(LinkBase).attrs(({disabled}) => ({$disabled: disabled}))<{
+  $disabled?: boolean;
+}>`
+  ${linkStyles}
 `;
 
 export function Link(props: LinkProps) {

@@ -16,6 +16,7 @@ import type {
   ContainerBreakpointSize,
   RadiusSize,
   SpaceSize,
+  SurfaceVariant,
   Theme,
 } from '@sentry/scraps/theme';
 
@@ -186,8 +187,156 @@ export type ResponsiveKey = ContainerBreakpointSize | ScreenBreakpoint;
 
 export type Responsive<T> = T | Partial<Record<ResponsiveKey, T>>;
 
-function isResponsive(prop: unknown): prop is Partial<Record<ResponsiveKey, any>> {
+export function isResponsive(prop: unknown): prop is Partial<Record<ResponsiveKey, any>> {
   return typeof prop === 'object' && prop !== null;
+}
+
+/**
+ * The plain value, or undefined for a responsive value.
+ */
+export function asPlain<T>(value: Responsive<T> | undefined): T | undefined {
+  return isResponsive(value) ? undefined : value;
+}
+
+const SCREEN_ORDER = VIEWPORT_ORDER.map(e => e.key);
+
+/**
+ * The value of a responsive prop at one breakpoint, with the same cascade as
+ * `rc()`. A container key carries the nearest smaller container key, else the
+ * base value. A screen key carries the nearest smaller screen key, else
+ * nothing. `initial` means nothing, so the CSS falls back to the next value.
+ */
+export function valueAt<T>(
+  value: Responsive<T> | undefined,
+  key: ResponsiveKey
+): T | 'initial' {
+  if (!isResponsive(value)) {
+    return 'initial';
+  }
+  const isScreen = key.startsWith('screen:');
+  let result: T | undefined;
+  for (const k of isScreen ? SCREEN_ORDER : CONTAINER_ORDER) {
+    if (value[k] !== undefined) {
+      result = value[k];
+    }
+    if (k === key) {
+      break;
+    }
+  }
+  if (result === undefined && !isScreen) {
+    // The base value is the first defined key, as in rc().
+    for (const k of [...CONTAINER_ORDER, ...SCREEN_ORDER]) {
+      if (value[k] !== undefined) {
+        result = value[k];
+        break;
+      }
+    }
+  }
+  return result ?? 'initial';
+}
+
+function resolveAt<T>(
+  value: Responsive<T> | undefined,
+  key: ResponsiveKey,
+  resolve: (value: T) => string | undefined
+): string {
+  const result = valueAt(value, key);
+  return result === 'initial' ? 'initial' : (resolve(result as T) ?? 'initial');
+}
+
+export const spacingAt = (
+  value: Responsive<Shorthand<SpaceSize, 4>> | undefined,
+  key: ResponsiveKey,
+  theme: Theme
+) => resolveAt(value, key, v => getSpacing(v, undefined, theme));
+
+export const marginAt = (
+  value: Responsive<Shorthand<Margin, 4>> | undefined,
+  key: ResponsiveKey,
+  theme: Theme
+) => resolveAt(value, key, v => getMargin(v, undefined, theme));
+
+export const radiusAt = (
+  value: Responsive<Shorthand<RadiusSize, 4>> | undefined,
+  key: ResponsiveKey,
+  theme: Theme
+) => resolveAt(value, key, v => getRadius(v, undefined, theme));
+
+export const borderAt = (
+  value: Responsive<BorderVariant> | undefined,
+  key: ResponsiveKey,
+  theme: Theme
+) => resolveAt(value, key, v => getBorder(v, undefined, theme));
+
+export const backgroundAt = (
+  value: Responsive<Exclude<SurfaceVariant, 'overlay'>> | undefined,
+  key: ResponsiveKey,
+  theme: Theme
+) => resolveAt(value, key, v => getBackground(v, theme));
+
+export const flexJustifyAt = (
+  value: Responsive<FlexJustify> | undefined,
+  key: ResponsiveKey
+) => resolveAt(value, key, flexJustify);
+
+export const flexAlignAt = (
+  value: Responsive<'start' | 'end' | 'center' | 'baseline' | 'stretch'> | undefined,
+  key: ResponsiveKey
+) => resolveAt(value, key, flexAlign);
+
+export const gridContentAt = (
+  value: Responsive<Parameters<typeof gridContent>[0]> | undefined,
+  key: ResponsiveKey
+) => resolveAt(value, key, gridContent);
+
+export function flexJustify(justify: FlexJustify | undefined): string | undefined {
+  return justify === undefined ? undefined : FLEX_JUSTIFY_CONTENT[justify];
+}
+
+export function flexAlign(
+  align: 'start' | 'end' | 'center' | 'baseline' | 'stretch' | undefined
+): string | undefined {
+  switch (align) {
+    case 'start':
+      return 'flex-start';
+    case 'end':
+      return 'flex-end';
+    default:
+      return align;
+  }
+}
+
+/**
+ * Grid alignment keeps the grid keywords for `start` and `end`.
+ */
+export function gridContent(
+  value:
+    | 'start'
+    | 'end'
+    | 'center'
+    | 'between'
+    | 'around'
+    | 'evenly'
+    | 'stretch'
+    | undefined
+): string | undefined {
+  switch (value) {
+    case 'between':
+      return 'space-between';
+    case 'around':
+      return 'space-around';
+    case 'evenly':
+      return 'space-evenly';
+    default:
+      return value;
+  }
+}
+
+export function getBackground(
+  background: Exclude<SurfaceVariant, 'overlay'> | undefined,
+  theme: Theme
+): string | undefined {
+  return background ? theme.tokens.background[background] : undefined;
 }
 
 /**

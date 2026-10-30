@@ -217,7 +217,10 @@ const StyledInnerWrap = styled(Flex, {
   shouldForwardProp: prop =>
     typeof prop === 'string' &&
     (isPropValid(prop) ||
-      ['padding', 'paddingLeft', 'paddingRight', 'align', 'alignSelf'].includes(prop)) &&
+      // Flex renders the `as` element itself. Emotion must not replace Flex.
+      ['as', 'padding', 'paddingLeft', 'paddingRight', 'align', 'alignSelf'].includes(
+        prop
+      )) &&
     !['disabled', 'isFocused', 'hasTrailingAction', 'priority'].includes(prop),
 })<{
   disabled: boolean;

@@ -244,7 +244,10 @@ export function DO_NOT_USE_getButtonStyles(
   };
 }
 
-function getButtonTheme(variant: ButtonVariant, theme: Theme) {
+export function getButtonTheme(
+  variant: ButtonVariant,
+  theme: Theme
+): {background?: string; color?: string; focus?: string; surface?: string} {
   switch (variant) {
     case 'primary':
       return {
